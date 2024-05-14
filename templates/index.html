@@ -5,25 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASAWA</title>
     <link rel="icon" href="static/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        body { padding-top: 20px; }
+    </style>
 </head>
 <body>
-    <h1>Airline Review Sentiment Analysis</h1>
-    <form id="reviewForm">
-        <label for="reviewText">Review Text</label>
-        <textarea id="reviewText" name="reviewText" rows="4" required></textarea>
-
-        <label for="aircraftType">Aircraft Type</label>
-        <input type="text" id="aircraftType" name="aircraftType" required>
-
-        <label for="route">Flight Route</label>
-        <input type="text" id="route" name="route" required>
-
-        <button type="submit">Analyze Sentiment</button>
+<div class="container">
+    <h1 class="text-center mb-4">Airline Review Sentiment Analysis</h1>
+    <form id="reviewForm" class="mb-3">
+        <div class="mb-3">
+            <label for="reviewText" class="form-label">Review Text</label>
+            <textarea id="reviewText" class="form-control" rows="4" placeholder="Enter your review"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="aircraftType" class="form-label">Aircraft Type</label>
+            <input type="text" id="aircraftType" class="form-control" placeholder="Aircraft Type">
+        </div>
+        <div class="mb-3">
+            <label for="route" class="form-label">Flight Route</label>
+            <input type="text" id="route" class="form-control" placeholder="Route">
+        </div>
+        <button type="submit" class="btn btn-primary">Analyze Sentiment</button>
     </form>
-
-    <div id="result" class="text-info"></div>
-    <table>
+    <p id="result" class="text-center"></p>
+    <table class="table">
         <thead>
             <tr>
                 <th>Review ID</th>
@@ -33,9 +39,11 @@
                 <th>Sentiment</th>
             </tr>
         </thead>
-        <tbody id="reviewTableBody">
+        <tbody id="reviewTable">
+            <!-- Rows will be added here dynamically -->
         </tbody>
     </table>
-    <script src="static/app.js"></script>
+</div>
+<script src="/static/app.js"></script>
 </body>
 </html>
