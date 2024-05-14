@@ -47,6 +47,7 @@ def analyze():
         review_id = generate_hash_id(text + str(time.time()))
         return jsonify({'sentiment': sentiment, 'reviewId': review_id, 'aircraftType': aircraft_type, 'route': route})
     except Exception as e:
+        app.logger.error(f"Error processing request: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
