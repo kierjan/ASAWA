@@ -46,3 +46,30 @@ function updateTable(data, reviewText, aircraftType, route) {
     newRow.insertCell(3).innerText = reviewText;
     newRow.insertCell(4).innerText = data.sentiment;
 }
+
+document.getElementById('captureButton').onclick = function() {
+    const tableContainer = document.getElementById('tableContainer');
+    html2canvas(tableContainer).then(canvas => {
+        canvas.toBlob(blob => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'result_table.png';
+            link.click();
+        }, 'image/png');
+    }).catch(err => {
+        console.error('Error capturing table:', err);
+    });
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/reviews').then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    }).then(data => {
+        data.forEach(review => {
+            updateTable(review, review.reviewText, review.aircraftType, review.route);
+        });
+    }).catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+    });
+});

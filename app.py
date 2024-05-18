@@ -1,57 +1,90 @@
-from flask import Flask, jsonify, request, render_template
-from nltk.sentiment import SentimentIntensityAnalyzer
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-import nltk
-import hashlib
-import time
+import os
+from flask import Flask, request, jsonify, render_template
+from html import escape
+from flask_sqlalchemy import SQLAlchemy
+from textblob import TextBlob
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s', handlers=[
+    logging.FileHandler("error.log"),
+    logging.StreamHandler()
+])
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/reviews.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize NLTK resources once
-nltk.download('vader_lexicon', quiet=True)
-nltk.download('punkt', quiet=True)
-nltk.download('stopwords', quiet=True)
-nltk.download('wordnet', quiet=True)
-nltk.download('omw-1.4', quiet=True)  # Ensure the omw-1.4 resource is downloaded
+db = SQLAlchemy(app)
 
-stop_words = stopwords.words('english')
-lemmatizer = WordNetLemmatizer()
+class Review(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    review_text = db.Column(db.String(500), nullable=False)
+    aircraft_type = db.Column(db.String(100), nullable=False)
+    route = db.Column(db.String(100), nullable=False)
+    sentiment = db.Column(db.String(50), nullable=False)
 
-def preprocess_text(text):
-    tokens = word_tokenize(text.lower())
-    filtered_tokens = [token for token in tokens if token not in stop_words]
-    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in filtered_tokens]
-    processed_text = ' '.join(lemmatized_tokens)
-    return processed_text
-
-def generate_hash_id(text):
-    hash_object = hashlib.sha256()
-    hash_object.update(text.encode('utf-8'))
-    return hash_object.hexdigest()[:8]
+    def __init__(self, review_text, aircraft_type, route, sentiment):
+        self.review_text = review_text
+        self.aircraft_type = aircraft_type
+        self.route = route
+        self.sentiment = sentiment
 
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
-        data = request.get_json()
-        text = data['text']
-        aircraft_type = data['aircraftType']
-        route = data['route']
-        processed_text = preprocess_text(text)
-        sia = SentimentIntensityAnalyzer()
-        score = sia.polarity_scores(processed_text)
-        sentiment = 'positive' if score['compound'] > 0 else 'negative' if score['compound'] < 0 else 'neutral'
-        review_id = generate_hash_id(text + str(time.time()))
-        return jsonify({'sentiment': sentiment, 'reviewId': review_id, 'aircraftType': aircraft_type, 'route': route})
+        data = request.json
+        if not data:
+            raise ValueError('No data provided')
+        
+        review_text = data.get('text')
+        aircraft_type = data.get('aircraftType')
+        route = data.get('route')
+
+        if not review_text:
+            raise ValueError('Review text is required')
+
+        analysis = TextBlob(review_text)
+        sentiment = 'Positive' if analysis.sentiment.polarity > 0 else 'Negative'
+
+        new_review = Review(review_text, aircraft_type, route, sentiment)
+        db.session.add(new_review)
+        db.session.commit()
+
+        return jsonify({'reviewId': new_review.id, 'sentiment': new_review.sentiment})
+
     except Exception as e:
-        app.logger.error(f"Error processing request: {e}")
+        logging.error(f"Error analyzing review: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/reviews', methods=['GET'])
+def get_reviews():
+    try:
+        reviews = Review.query.all()
+        reviews_list = [
+            {
+                'reviewId': review.id,
+                'reviewText': escape(review.review_text),
+                'aircraftType': review.aircraft_type,
+                'route': review.route,
+                'sentiment': review.sentiment
+            }
+            for review in reviews
+        ]
+        return jsonify(reviews_list)
+    
+    except Exception as e:
+        logging.error(f"Error fetching reviews: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    from waitress import serve
-    serve(app, host='0.0.0.0', port=8080)
+    with app.app_context():
+        instance_path = os.path.join(os.getcwd(), 'instance')
+        if not os.path.exists(instance_path):
+            os.makedirs(instance_path)
+        db.create_all()
+    app.run(debug=True, host='0.0.0.0')

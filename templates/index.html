@@ -29,21 +29,25 @@
         <button type="submit" class="btn btn-primary">Analyze Sentiment</button>
     </form>
     <p id="result" class="text-center"></p>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Review ID</th>
-                <th>Aircraft Type</th>
-                <th>Route</th>
-                <th>User's Review</th>
-                <th>Sentiment</th>
-            </tr>
-        </thead>
-        <tbody id="reviewTable">
-            <!-- Rows will be added here dynamically -->
-        </tbody>
-    </table>
+    <div id="tableContainer">
+        <table class="table" id="reviewTableContainer">
+            <thead>
+                <tr>
+                    <th>Review ID</th>
+                    <th>Aircraft Type</th>
+                    <th>Route</th>
+                    <th>User's Review</th>
+                    <th>Sentiment</th>
+                </tr>
+            </thead>
+            <tbody id="reviewTable">
+                <!-- Rows will be added here dynamically -->
+            </tbody>
+        </table>
+    </div>
+    <button id="captureButton" class="btn btn-secondary">Capture Table as Image</button>
 </div>
-<script src="/static/app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="static/app.js"></script>
 </body>
 </html>
