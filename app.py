@@ -49,7 +49,14 @@ def analyze():
             raise ValueError('Review text is required')
 
         analysis = TextBlob(review_text)
-        sentiment = 'Positive' if analysis.sentiment.polarity > 0 else 'Negative'
+        polarity = analysis.sentiment.polarity
+
+        if polarity > 0.1:
+            sentiment = 'Positive'
+        elif polarity < -0.1:
+            sentiment = 'Negative'
+        else:
+            sentiment = 'Neutral'
 
         new_review = Review(review_text, aircraft_type, route, sentiment)
         db.session.add(new_review)
