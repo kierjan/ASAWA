@@ -1,5 +1,8 @@
 import os
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file, make_response
+from io import StringIO
+from io import StringIO
+import csv
 from html import escape
 from flask_sqlalchemy import SQLAlchemy
 from textblob import TextBlob
@@ -66,7 +69,13 @@ def analyze():
         db.session.add(new_review)
         db.session.commit()
 
-        return jsonify({'reviewId': new_review.id, 'sentiment': new_review.sentiment})
+        return jsonify({
+            'reviewId': new_review.id, 
+            'sentiment': new_review.sentiment,
+            'reviewText': new_review.review_text,
+            'aircraftType': new_review.aircraft_type,
+            'route': new_review.route
+        })
 
     except Exception as e:
         logging.error(f"Error analyzing review: {e}", exc_info=True)
@@ -90,6 +99,24 @@ def get_reviews():
     
     except Exception as e:
         logging.error(f"Error fetching reviews: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/download', methods=['GET'])
+def download_reviews():
+    try:
+        reviews = Review.query.all()
+        si = StringIO()
+        cw = csv.writer(si)
+        cw.writerow(['Review ID', 'Review Text', 'Aircraft Type', 'Route', 'Sentiment'])
+        for review in reviews:
+            cw.writerow([review.id, review.review_text, review.aircraft_type, review.route, review.sentiment])
+        
+        output = make_response(si.getvalue())
+        output.headers["Content-Disposition"] = "attachment; filename=reviews.csv"
+        output.headers["Content-type"] = "text/csv"
+        return output
+    except Exception as e:
+        logging.error(f"Error downloading reviews: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
