@@ -12,7 +12,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(me
 ])
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/reviews.db'
+
+# Define the absolute path for the database
+database_path = os.path.join(os.path.abspath(os.getcwd()), 'instance', 'reviews.db')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{database_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
