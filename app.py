@@ -1,12 +1,12 @@
 import os
 from flask import Flask, request, jsonify, render_template, send_file, make_response
 from io import StringIO
-from io import StringIO
 import csv
 from html import escape
 from flask_sqlalchemy import SQLAlchemy
 from textblob import TextBlob
 import logging
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s', handlers=[
@@ -117,6 +117,47 @@ def download_reviews():
         return output
     except Exception as e:
         logging.error(f"Error downloading reviews: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    try:
+        # Example labeled data for evaluation
+        labeled_reviews = [
+            {"text": "The flight was fantastic!", "label": "Positive"},
+            {"text": "The service was terrible and the seats were uncomfortable.", "label": "Negative"},
+            {"text": "It was an okay experience, nothing special.", "label": "Neutral"},
+            {"text": "Loved the food and the staff were friendly!", "label": "Positive"},
+            {"text": "The plane was delayed and the staff were rude.", "label": "Negative"},
+            # Add more labeled reviews as needed
+        ]
+
+        def predict_sentiment(text):
+            analysis = TextBlob(text)
+            polarity = analysis.sentiment.polarity
+            if polarity > 0.1:
+                return "Positive"
+            elif polarity < -0.1:
+                return "Negative"
+            else:
+                return "Neutral"
+
+        predicted_labels = [predict_sentiment(review["text"]) for review in labeled_reviews]
+        true_labels = [review["label"] for review in labeled_reviews]
+
+        accuracy = accuracy_score(true_labels, predicted_labels)
+        precision = precision_score(true_labels, predicted_labels, average='weighted')
+        recall = recall_score(true_labels, predicted_labels, average='weighted')
+        f1 = f1_score(true_labels, predicted_labels, average='weighted')
+
+        return jsonify({
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1
+        })
+    except Exception as e:
+        logging.error(f"Error calculating metrics: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
